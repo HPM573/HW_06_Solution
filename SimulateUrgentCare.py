@@ -8,3 +8,5 @@ myUrgentCare = Cls.UrgentCare(id=1, parameters=P.Parameters())
 # simulate the urgent care
 myUrgentCare.simulate(sim_duration=D.SIM_DURATION)
 
+print('Total patients served:', myUrgentCare.nPatientsServed)
+print('Patients received mental health consultation',  myUrgentCare.nPatientsReceivedConsult)

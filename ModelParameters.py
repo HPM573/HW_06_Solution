@@ -9,3 +9,5 @@ class Parameters:
         self.nExamRooms = D.N_EXAM_ROOMS
         self.arrivalTimeDist = RVGs.Exponential(scale=D.MEAN_ARRIVAL_TIME)
         self.examTimeDist = RVGs.Exponential(scale=D.MEAN_EXAM_DURATION)
+        self.probDepression = D.PROB_DEPRESSION
+        self.mentalHealthConsultDist = RVGs.Exponential(scale=D.MEAN_MH_CONSULT)

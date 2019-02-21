@@ -4,11 +4,13 @@ import ModelEvents as E
 
 
 class Patient:
-    def __init__(self, id):
+    def __init__(self, id, if_with_depression):
         """ create a patient
         :param id: (integer) patient ID
+        :param if_with_depression: (bool) set to true if the patient has depression
         """
         self.id = id
+        self.ifWithDepression = if_with_depression
 
 
 class WaitingRoom:
@@ -42,11 +44,11 @@ class WaitingRoom:
         return len(self.patientsWaiting)
 
 
-class ExamRoom:
+class Room:
     def __init__(self, id, service_time_dist, urgent_care, sim_cal):
         """ create an exam room
-        :param id: (integer) the exam room ID
-        :param service_time_dist: distribution of service time in this exam room
+        :param id: (integer) the room ID
+        :param service_time_dist: distribution of service time in thisroom
         :param urgent_care: urgent care
         :param sim_cal: simulation calendar
         """
@@ -56,6 +58,29 @@ class ExamRoom:
         self.simCal = sim_cal
         self.isBusy = False
         self.patientBeingServed = None  # the patient who is being served
+
+    def remove_patient(self):
+        """ :returns the patient that was being served in this exam room"""
+
+        # store the patient to be returned and set the patient that was being served to None
+        returned_patient = self.patientBeingServed
+        self.patientBeingServed = None
+
+        # the exam room is idle now
+        self.isBusy = False
+
+        return returned_patient
+
+
+class ExamRoom(Room):
+    def __init__(self, id, service_time_dist, urgent_care, sim_cal):
+        """ create an exam room
+        :param id: (integer) the exam room ID
+        :param service_time_dist: distribution of service time in this exam room
+        :param urgent_care: urgent care
+        :param sim_cal: simulation calendar
+        """
+        Room.__init__(self, id=id, service_time_dist=service_time_dist,urgent_care=urgent_care, sim_cal=sim_cal)
 
     def exam(self, patient, rng):
         """ starts examining on the patient
@@ -72,20 +97,37 @@ class ExamRoom:
 
         # schedule the end of exam
         self.simCal.add_event(
-            E.EndOfExam(time=exam_completion_time, exam_room=self, urgent_care=self.urgentCare)
+            event=E.EndOfExam(time=exam_completion_time, exam_room=self, urgent_care=self.urgentCare)
         )
 
-    def remove_patient(self):
-        """ :returns the patient that was being served in this exam room"""
 
-        # store the patient to be returned and set the patient that was being served to None
-        returned_patient = self.patientBeingServed
-        self.patientBeingServed = None
+class ConsultRoom(Room):
+    def __init__(self, id, service_time_dist, urgent_care, sim_cal):
+        """ create an exam room
+        :param id: (integer) the room ID
+        :param service_time_dist: distribution of service time in this consult room
+        :param urgent_care: urgent care
+        :param sim_cal: simulation calendar
+        """
+        Room.__init__(self, id=id, service_time_dist=service_time_dist,urgent_care=urgent_care,sim_cal=sim_cal)
 
-        # the exam room is idle now
-        self.isBusy = False
+    def consult(self, patient, rng):
+        """ starts mental health consultation for this patient
+        :param patient: a patient
+        :param rng: random number generator
+        """
 
-        return returned_patient
+        # the room is busy
+        self.patientBeingServed = patient
+        self.isBusy = True
+
+        # find the exam completion time (current time + service time)
+        exam_completion_time = self.simCal.time + self.serviceTimeDist.sample(rng=rng)
+
+        # schedule the end of exam
+        self.simCal.add_event(
+            event=E.EndOfMentalHealthConsult(time=exam_completion_time, consult_room=self, urgent_care=self.urgentCare)
+        )
 
 
 class UrgentCare:
@@ -101,16 +143,23 @@ class UrgentCare:
 
         # model entities
         self.patients = []          # list of patients
-        self.waitingRoom = None     # the waiting room object
+        self.waitingRoom = None     # the waiting room
+        self.consultWaitingRoom = None   # waiting room to see the mental health specialist
         self.examRooms = []         # list of exam rooms
+        self.consultRoom = None     # mental health consultation room
         self.params = parameters    # parameters of this urgent care
         self.simCal = SimCls.SimulationCalendar()   # simulation calendar
+
+        # statistics
+        self.nPatientsServed = 0            # number of patients served
+        self.nPatientsReceivedConsult = 0   # number of patients received mental health consultation
 
     def __initialize(self):
         """ initialize simulating the urgent care """
 
-        # create a waiting room
+        # create the waiting rooms
         self.waitingRoom = WaitingRoom(sim_cal=self.simCal)
+        self.consultWaitingRoom = WaitingRoom(sim_cal=self.simCal)
 
         # create exam rooms
         for i in range(0, self.params.nExamRooms):
@@ -119,6 +168,11 @@ class UrgentCare:
                                            urgent_care=self,
                                            sim_cal=self.simCal)
                                   )
+        # create the mental health consultation room
+        self.consultRoom = ConsultRoom(id=0,
+                                       service_time_dist=self.params.mentalHealthConsultDist,
+                                       urgent_care=self,
+                                       sim_cal=self.simCal)
 
         # schedule the closing event
         self.simCal.add_event(
@@ -127,9 +181,18 @@ class UrgentCare:
         # find the arrival time of the first patient
         arrival_time = self.params.arrivalTimeDist.sample(rng=self.rng)
 
+        # find the depression status of the next patient
+        if_with_depression = False
+        if self.rng.sample() < self.params.probDepression:
+            if_with_depression = True
+
         # schedule the arrival of the first patient
         self.simCal.add_event(
-            event=E.Arrival(time=arrival_time, patient=Patient(id=0), urgent_care=self))
+            event=E.Arrival(
+                time=arrival_time,
+                patient=Patient(id=0,if_with_depression=if_with_depression),
+                urgent_care=self)
+        )
 
     def simulate(self, sim_duration):
         """ simulate the urgent care
@@ -175,11 +238,16 @@ class UrgentCare:
         # find the arrival time of the next patient (current time + time until next arrival)
         next_arrival_time = self.simCal.time + self.params.arrivalTimeDist.sample(rng=self.rng)
 
+        # find the depression status of the next patient
+        if_with_depression = False
+        if self.rng.sample() < self.params.probDepression:
+            if_with_depression = True
+
         # schedule the arrival of the next patient
         self.simCal.add_event(
             event=E.Arrival(
                 time=next_arrival_time,
-                patient=Patient(id=patient.id + 1),  # id of the next patient = this patient's id + 1
+                patient=Patient(id=patient.id + 1, if_with_depression=if_with_depression),
                 urgent_care=self
             )
         )
@@ -190,16 +258,46 @@ class UrgentCare:
         """
 
         # get the patient who is about to be discharged
-        discharged_patient = exam_room.remove_patient()
+        this_patient = exam_room.remove_patient()
 
-        # remove the discharged patient from the list of patients
-        self.patients.remove(discharged_patient)
+        # check the mental health status of the patient
+        if this_patient.ifWithDepression:
+            # send the patient to the mental health specialist
+            # if the mental health specialist is busy
+            if self.consultRoom.isBusy:
+                # the patient will join the waiting room in the mental health unity
+                self.consultWaitingRoom.add_patient(patient=this_patient)
+            else:
+                # this patient starts receiving mental health consultation
+                self.consultRoom.consult(patient=this_patient, rng=self.rng)
+        else:
+            # remove the discharged patient from the list of patients
+            self.patients.remove(this_patient)
+            self.nPatientsServed += 1
 
         # check if there is any patient waiting
         if self.waitingRoom.get_num_patients_waiting() > 0:
 
             # start serving the next patient in line
             exam_room.exam(patient=self.waitingRoom.get_next_patient(), rng=self.rng)
+
+    def process_end_of_consultation(self, consult_room):
+        """ process the end of mental health consultation
+        :param consult_room: consultation room
+        """
+
+        # get the patient who is about to be discharged
+        this_patient = consult_room.remove_patient()
+
+        # remove the discharged patient from the list of patients
+        self.patients.remove(this_patient)
+        self.nPatientsServed += 1
+        self.nPatientsReceivedConsult += 1
+
+        # check if there is any patient waiting
+        if self.consultWaitingRoom.get_num_patients_waiting() > 0:
+            # start serving the next patient in line
+            consult_room.consult(patient=self.consultWaitingRoom.get_next_patient(), rng=self.rng)
 
     def process_close_urgent_care(self):
         """ process the closing of the urgent care """

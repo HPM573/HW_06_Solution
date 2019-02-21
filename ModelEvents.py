@@ -4,9 +4,10 @@ from SimPy.DiscreteEventSim import SimulationEvent as Event
 
 class Priority(Enum):
     """ priority of urgent care simulation events (low number implies higher priority)"""
-    ARRIVAL = 1
-    END_OF_EXAM = 0
-    CLOSE = 2
+    ARRIVAL = 2
+    END_OF_EXAM = 1
+    END_OF_MH_CONSULT = 0
+    CLOSE = 3
 
 
 class Arrival(Event):
@@ -49,6 +50,27 @@ class EndOfExam(Event):
 
         # process the end of service for this exam room
         self.urgentCare.process_end_of_exam(exam_room=self.examRoom)
+
+
+class EndOfMentalHealthConsult(Event):
+    def __init__(self, time, consult_room, urgent_care):
+        """
+        create the end of mental health consultation
+        :param time: time of the service completion
+        :param consult_room: the mental health consultation room
+        :param urgent_care: the urgent care
+        """
+        # initialize the base class
+        Event.__init__(self, time=time, priority=Priority.END_OF_EXAM.value)
+
+        self.consultRoom = consult_room
+        self.urgentCare = urgent_care
+
+    def process(self):
+        """ processes the end of mental health consultation """
+
+        # process the end of service for this exam room
+        self.urgentCare.process_end_of_consultation(consult_room=self.consultRoom)
 
 
 class CloseUrgentCare(Event):
