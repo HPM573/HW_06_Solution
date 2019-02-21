@@ -1,1 +1,1 @@
-# HW_6_Solution
+Solution to Homework Assignment 6
