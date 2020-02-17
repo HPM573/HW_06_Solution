@@ -1,12 +1,13 @@
-import ModelEntities as Cls
+import UrgentCareModel as M
 import InputData as D
 import ModelParameters as P
 
-# create an urgent care
-myUrgentCare = Cls.UrgentCare(id=1, parameters=P.Parameters())
+# create an urgent care model
+urgentCareModel = M.UrgentCareModel(id=1, parameters=P.Parameters())
 
 # simulate the urgent care
-myUrgentCare.simulate(sim_duration=D.SIM_DURATION)
+urgentCareModel.simulate(sim_duration=D.SIM_DURATION)
 
-print('Total patients served:', myUrgentCare.nPatientsServed)
-print('Patients received mental health consultation',  myUrgentCare.nPatientsReceivedConsult)
+print('Total patients arrived:', urgentCareModel.urgentCare.nPatientsArrived)
+print('Total patients served:', urgentCareModel.urgentCare.nPatientsServed)
+print('Patients received mental health consultation',  urgentCareModel.urgentCare.nPatientsReceivedConsult)

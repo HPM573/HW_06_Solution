@@ -24,11 +24,11 @@ class Arrival(Event):
         self.patient = patient
         self.urgentCare = urgent_care
 
-    def process(self):
+    def process(self, rng=None):
         """ processes the arrival of a new patient """
 
         # receive the new patient
-        self.urgentCare.process_new_patient(patient=self.patient)
+        self.urgentCare.process_new_patient(patient=self.patient, rng=rng)
 
 
 class EndOfExam(Event):
@@ -45,11 +45,11 @@ class EndOfExam(Event):
         self.examRoom = exam_room
         self.urgentCare = urgent_care
 
-    def process(self):
+    def process(self, rng=None):
         """ processes the end of service event """
 
         # process the end of service for this exam room
-        self.urgentCare.process_end_of_exam(exam_room=self.examRoom)
+        self.urgentCare.process_end_of_exam(exam_room=self.examRoom, rng=rng)
 
 
 class EndOfMentalHealthConsult(Event):
@@ -66,11 +66,11 @@ class EndOfMentalHealthConsult(Event):
         self.consultRoom = consult_room
         self.urgentCare = urgent_care
 
-    def process(self):
+    def process(self, rng=None):
         """ processes the end of mental health consultation """
 
         # process the end of service for this exam room
-        self.urgentCare.process_end_of_consultation(consult_room=self.consultRoom)
+        self.urgentCare.process_end_of_consultation(consult_room=self.consultRoom, rng=rng)
 
 
 class CloseUrgentCare(Event):
@@ -86,7 +86,7 @@ class CloseUrgentCare(Event):
         # call the master class initialization
         Event.__init__(self, time=time, priority=Priority.CLOSE.value)
 
-    def process(self):
+    def process(self, rng=None):
         """ processes the closing event """
 
         # close the urgent care
