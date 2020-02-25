@@ -1,1 +1,1 @@
-Solution to Homework Assignment 6
+# Solution to Homework Assignment 6
