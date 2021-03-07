@@ -1,6 +1,4 @@
-import SimPy.DiscreteEventSim as SimCls
-import SimPy.RandomVariantGenerators as RVGs
-import ModelEvents as E
+from ModelEvents import Arrival, EndOfExam, EndOfMentalHealthConsult
 
 
 class Patient:
@@ -95,7 +93,7 @@ class ExamRoom(Room):
 
         # schedule the end of exam
         self.simCal.add_event(
-            event=E.EndOfExam(time=exam_completion_time, exam_room=self, urgent_care=self.urgentCare)
+            event=EndOfExam(time=exam_completion_time, exam_room=self, urgent_care=self.urgentCare)
         )
 
 
@@ -124,7 +122,7 @@ class ConsultRoom(Room):
 
         # schedule the end of exam
         self.simCal.add_event(
-            event=E.EndOfMentalHealthConsult(time=exam_completion_time, consult_room=self, urgent_care=self.urgentCare)
+            event=EndOfMentalHealthConsult(time=exam_completion_time, consult_room=self, urgent_care=self.urgentCare)
         )
 
 
@@ -210,12 +208,12 @@ class UrgentCare:
 
         # find the depression status of the next patient
         if_with_depression = False
-        if rng.sample() < self.params.probDepression:
+        if rng.random_sample() < self.params.probDepression:
             if_with_depression = True
 
         # schedule the arrival of the next patient
         self.simCal.add_event(
-            event=E.Arrival(
+            event=Arrival(
                 time=next_arrival_time,
                 patient=Patient(id=patient.id + 1, if_with_depression=if_with_depression),
                 urgent_care=self
