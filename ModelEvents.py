@@ -1,15 +1,12 @@
-from enum import Enum
-import InputData as D
 from SimPy.DiscreteEventSim import SimulationEvent as Event
 
 
-class Priority(Enum):
-    """ priority for processing the urgent care simulation events
-        if they are to occur at the exact same time (low number implies higher priority)"""
-    ARRIVAL = 2
-    END_OF_EXAM = 1
-    END_OF_MH_CONSULT = 0
-    CLOSE = 3
+""" priority for processing the urgent care simulation events
+    if they are to occur at the exact same time (low number implies higher priority)"""
+ARRIVAL = 2
+END_OF_EXAM = 1
+END_OF_MH_CONSULT = 0
+CLOSE = 3
 
 
 class Arrival(Event):
@@ -21,7 +18,7 @@ class Arrival(Event):
         :param urgent_care: the urgent care
         """
         # initialize the super class
-        Event.__init__(self, time=time, priority=Priority.ARRIVAL.value)
+        Event.__init__(self, time=time, priority=ARRIVAL)
 
         self.patient = patient
         self.urgentCare = urgent_care
@@ -42,7 +39,7 @@ class EndOfExam(Event):
         :param urgent_care: the urgent care
         """
         # initialize the base class
-        Event.__init__(self, time=time, priority=Priority.END_OF_EXAM.value)
+        Event.__init__(self, time=time, priority=END_OF_EXAM)
 
         self.examRoom = exam_room
         self.urgentCare = urgent_care
@@ -63,7 +60,7 @@ class EndOfMentalHealthConsult(Event):
         :param urgent_care: the urgent care
         """
         # initialize the base class
-        Event.__init__(self, time=time, priority=Priority.END_OF_EXAM.value)
+        Event.__init__(self, time=time, priority=END_OF_MH_CONSULT)
 
         self.consultRoom = consult_room
         self.urgentCare = urgent_care
@@ -86,7 +83,7 @@ class CloseUrgentCare(Event):
         self.urgentCare = urgent_care
 
         # call the super class initialization
-        Event.__init__(self, time=time, priority=Priority.CLOSE.value)
+        Event.__init__(self, time=time, priority=CLOSE)
 
     def process(self, rng=None):
         """ processes the closing event """
