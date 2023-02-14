@@ -58,13 +58,16 @@ class Physician:
     def remove_patient(self):
         """ :returns the patient that was being served in this exam room"""
 
-        # store the patient to be returned and set the patient that was being served to None
+        # store the patient to be returned
         returned_patient = self.patientBeingServed
+
+        # set the patient that was being served to None
         self.patientBeingServed = None
 
-        # the exam room is idle now
+        # the physician is idle now
         self.isBusy = False
 
+        # return the patient that was being serived
         return returned_patient
 
 
