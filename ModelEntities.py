@@ -67,7 +67,7 @@ class Physician:
         # the physician is idle now
         self.isBusy = False
 
-        # return the patient that was being serived
+        # return the patient that was being served
         return returned_patient
 
 
