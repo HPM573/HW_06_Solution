@@ -40,11 +40,11 @@ class WaitingRoom:
         return len(self.patientsWaiting)
 
 
-class Room:
+class Physician:
     def __init__(self, id, service_time_dist, urgent_care, sim_cal):
-        """ create an exam room
+        """ create a physician
         :param id: (integer) the room ID
-        :param service_time_dist: distribution of service time in thisroom
+        :param service_time_dist: distribution of service time i
         :param urgent_care: urgent care
         :param sim_cal: simulation calendar
         """
@@ -68,18 +68,18 @@ class Room:
         return returned_patient
 
 
-class ExamRoom(Room):
+class PCP(Physician):
     def __init__(self, id, service_time_dist, urgent_care, sim_cal):
-        """ create an exam room
-        :param id: (integer) the exam room ID
+        """ create a primary care physician
+        :param id: (integer) id
         :param service_time_dist: distribution of service time in this exam room
         :param urgent_care: urgent care
         :param sim_cal: simulation calendar
         """
-        Room.__init__(self, id=id, service_time_dist=service_time_dist,urgent_care=urgent_care, sim_cal=sim_cal)
+        Physician.__init__(self, id=id, service_time_dist=service_time_dist, urgent_care=urgent_care, sim_cal=sim_cal)
 
     def exam(self, patient, rng):
-        """ starts examining on the patient
+        """ starts examining the patient
         :param patient: a patient
         :param rng: random number generator
         """
@@ -93,19 +93,19 @@ class ExamRoom(Room):
 
         # schedule the end of exam
         self.simCal.add_event(
-            event=EndOfExam(time=exam_completion_time, exam_room=self, urgent_care=self.urgentCare)
+            event=EndOfExam(time=exam_completion_time, physician=self, urgent_care=self.urgentCare)
         )
 
 
-class ConsultRoom(Room):
+class MHP(Physician):
     def __init__(self, id, service_time_dist, urgent_care, sim_cal):
-        """ create an exam room
+        """ create a mental health physician
         :param id: (integer) the room ID
-        :param service_time_dist: distribution of service time in this consult room
+        :param service_time_dist: distribution of service time
         :param urgent_care: urgent care
         :param sim_cal: simulation calendar
         """
-        Room.__init__(self, id=id, service_time_dist=service_time_dist,urgent_care=urgent_care,sim_cal=sim_cal)
+        Physician.__init__(self, id=id, service_time_dist=service_time_dist, urgent_care=urgent_care, sim_cal=sim_cal)
 
     def consult(self, patient, rng):
         """ starts mental health consultation for this patient
@@ -139,28 +139,25 @@ class UrgentCare:
         self.simCal = sim_cal
         self.ifOpen = True  # if the urgent care is open and admitting new patients
 
-        # model entities
-        self.patients = []  # list of patients
-
         # waiting room
         self.waitingRoom = WaitingRoom()
 
-        # exam rooms
-        self.examRooms = []
-        for i in range(0, self.params.nExamRooms):
-            self.examRooms.append(ExamRoom(id=i,
-                                           service_time_dist=self.params.examTimeDist,
-                                           urgent_care=self,
-                                           sim_cal=self.simCal,))
+        # primary care physicians
+        self.PCPs = []
+        for i in range(0, self.params.nPCPs):
+            self.PCPs.append(PCP(id=i,
+                                 service_time_dist=self.params.examTimeDist,
+                                 urgent_care=self,
+                                 sim_cal=self.simCal, ))
 
         # waiting room for mental health consultation
-        self.consultWaitingRoom = WaitingRoom()
+        self.mhConsultWaitingRoom = WaitingRoom()
 
-        # create the mental health consultation room
-        self.consultRoom = ConsultRoom(id=0,
-                                       service_time_dist=self.params.mentalHealthConsultDist,
-                                       urgent_care=self,
-                                       sim_cal=self.simCal)
+        # create the mental health physician
+        self.MHP = MHP(id=0,
+                       service_time_dist=self.params.mentalHealthConsultDist,
+                       urgent_care=self,
+                       sim_cal=self.simCal)
 
         # statistics
         self.nPatientsArrived = 0           # number of patients arrived
@@ -179,27 +176,24 @@ class UrgentCare:
 
         self.nPatientsArrived += 1
 
-        # add the new patient to the list of patients
-        self.patients.append(patient)
-
         # check if anyone is waiting
         if self.waitingRoom.get_num_patients_waiting() > 0:
             # if anyone is waiting, add the patient to the waiting room
             self.waitingRoom.add_patient(patient=patient)
         else:
-            # find an idle exam room
-            idle_room_found = False
-            for room in self.examRooms:
-                # if this room is busy
-                if not room.isBusy:
-                    # send the last patient to this exam room
-                    room.exam(patient=patient, rng=rng)
-                    idle_room_found = True
+            # find an idle physician
+            idle_pcp_found = False
+            for pcp in self.PCPs:
+                # if this pcp is busy
+                if not pcp.isBusy:
+                    # send the last patient to this pcp
+                    pcp.exam(patient=patient, rng=rng)
+                    idle_pcp_found = True
                     # break the for loop
                     break
 
-            # if no idle room was found
-            if not idle_room_found:
+            # if no idle pcp was found
+            if not idle_pcp_found:
                 # add the patient to the waiting room
                 self.waitingRoom.add_patient(patient=patient)
 
@@ -220,54 +214,52 @@ class UrgentCare:
             )
         )
 
-    def process_end_of_exam(self, exam_room, rng):
-        """ processes the end of exam in the specified exam room
-        :param exam_room: the exam room where the service is ended
+    def process_end_of_exam(self, pcp, rng):
+        """ processes the end of exam for this primary care physician
+        :param pcp: the pcp that finished the exam
         :param rng: random number generator
         """
 
         # get the patient who is about to be discharged
-        this_patient = exam_room.remove_patient()
+        this_patient = pcp.remove_patient()
 
         # check the mental health status of the patient
         if this_patient.ifWithDepression:
             # send the patient to the mental health specialist
             # if the mental health specialist is busy
-            if self.consultRoom.isBusy:
+            if self.MHP.isBusy:
                 # the patient will join the waiting room in the mental health unity
-                self.consultWaitingRoom.add_patient(patient=this_patient)
+                self.mhConsultWaitingRoom.add_patient(patient=this_patient)
             else:
                 # this patient starts receiving mental health consultation
-                self.consultRoom.consult(patient=this_patient, rng=rng)
+                self.MHP.consult(patient=this_patient, rng=rng)
         else:
             # remove the discharged patient from the list of patients
-            self.patients.remove(this_patient)
             self.nPatientsServed += 1
 
         # check if there is any patient waiting
         if self.waitingRoom.get_num_patients_waiting() > 0:
 
             # start serving the next patient in line
-            exam_room.exam(patient=self.waitingRoom.get_next_patient(), rng=rng)
+            pcp.exam(patient=self.waitingRoom.get_next_patient(), rng=rng)
 
-    def process_end_of_consultation(self, consult_room, rng):
+    def process_end_of_consultation(self, mhp, rng):
         """ process the end of mental health consultation
-        :param consult_room: consultation room
+        :param mhp: mental health physician
         :param rng: random number generator
         """
 
         # get the patient who is about to be discharged
-        this_patient = consult_room.remove_patient()
+        this_patient = mhp.remove_patient()
 
         # remove the discharged patient from the list of patients
-        self.patients.remove(this_patient)
         self.nPatientsServed += 1
         self.nPatientsReceivedConsult += 1
 
         # check if there is any patient waiting
-        if self.consultWaitingRoom.get_num_patients_waiting() > 0:
+        if self.mhConsultWaitingRoom.get_num_patients_waiting() > 0:
             # start serving the next patient in line
-            consult_room.consult(patient=self.consultWaitingRoom.get_next_patient(), rng=rng)
+            mhp.consult(patient=self.mhConsultWaitingRoom.get_next_patient(), rng=rng)
 
     def process_close_urgent_care(self):
         """ process the closing of the urgent care """

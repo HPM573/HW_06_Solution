@@ -1,4 +1,4 @@
-from SimPy.DiscreteEventSim import SimulationEvent as Event
+from deampy.discrete_event_sim import SimulationEvent
 
 
 """ priority for processing the urgent care simulation events
@@ -9,7 +9,7 @@ END_OF_MH_CONSULT = 0
 CLOSE = 3
 
 
-class Arrival(Event):
+class Arrival(SimulationEvent):
     def __init__(self, time, patient, urgent_care):
         """
         creates the arrival of the next patient event
@@ -18,7 +18,7 @@ class Arrival(Event):
         :param urgent_care: the urgent care
         """
         # initialize the super class
-        Event.__init__(self, time=time, priority=ARRIVAL)
+        SimulationEvent.__init__(self, time=time, priority=ARRIVAL)
 
         self.patient = patient
         self.urgentCare = urgent_care
@@ -30,28 +30,28 @@ class Arrival(Event):
         self.urgentCare.process_new_patient(patient=self.patient, rng=rng)
 
 
-class EndOfExam(Event):
-    def __init__(self, time, exam_room, urgent_care):
+class EndOfExam(SimulationEvent):
+    def __init__(self, time, physician, urgent_care):
         """
         create the end of service for an specified exam room
         :param time: time of the service completion
-        :param exam_room: the exam room
+        :param physician: the exam room
         :param urgent_care: the urgent care
         """
         # initialize the base class
-        Event.__init__(self, time=time, priority=END_OF_EXAM)
+        SimulationEvent.__init__(self, time=time, priority=END_OF_EXAM)
 
-        self.examRoom = exam_room
+        self.examRoom = physician
         self.urgentCare = urgent_care
 
     def process(self, rng=None):
         """ processes the end of service event """
 
         # process the end of service for this exam room
-        self.urgentCare.process_end_of_exam(exam_room=self.examRoom, rng=rng)
+        self.urgentCare.process_end_of_exam(pcp=self.examRoom, rng=rng)
 
 
-class EndOfMentalHealthConsult(Event):
+class EndOfMentalHealthConsult(SimulationEvent):
     def __init__(self, time, consult_room, urgent_care):
         """
         create the end of mental health consultation
@@ -60,7 +60,7 @@ class EndOfMentalHealthConsult(Event):
         :param urgent_care: the urgent care
         """
         # initialize the base class
-        Event.__init__(self, time=time, priority=END_OF_MH_CONSULT)
+        SimulationEvent.__init__(self, time=time, priority=END_OF_MH_CONSULT)
 
         self.consultRoom = consult_room
         self.urgentCare = urgent_care
@@ -69,10 +69,10 @@ class EndOfMentalHealthConsult(Event):
         """ processes the end of mental health consultation """
 
         # process the end of service for this exam room
-        self.urgentCare.process_end_of_consultation(consult_room=self.consultRoom, rng=rng)
+        self.urgentCare.process_end_of_consultation(mhp=self.consultRoom, rng=rng)
 
 
-class CloseUrgentCare(Event):
+class CloseUrgentCare(SimulationEvent):
     def __init__(self, time, urgent_care):
         """
         create the event to close the urgent care
@@ -83,7 +83,7 @@ class CloseUrgentCare(Event):
         self.urgentCare = urgent_care
 
         # call the super class initialization
-        Event.__init__(self, time=time, priority=CLOSE)
+        SimulationEvent.__init__(self, time=time, priority=CLOSE)
 
     def process(self, rng=None):
         """ processes the closing event """

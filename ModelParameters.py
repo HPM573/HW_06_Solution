@@ -1,13 +1,13 @@
 import InputData as D
-import SimPy.RandomVariateGenerators as RVGs
+from deampy.random_variats import Exponential
 
 
 class Parameters:
     # class to contain the parameters of the urgent care model
     def __init__(self):
         self.hoursOpen = D.HOURS_OPEN
-        self.nExamRooms = D.N_EXAM_ROOMS
-        self.arrivalTimeDist = RVGs.Exponential(scale=D.MEAN_ARRIVAL_TIME)
-        self.examTimeDist = RVGs.Exponential(scale=D.MEAN_EXAM_DURATION)
+        self.nPCPs = D.N_PCP
+        self.arrivalTimeDist = Exponential(scale=D.MEAN_ARRIVAL_TIME)
+        self.examTimeDist = Exponential(scale=D.MEAN_EXAM_DURATION)
         self.probDepression = D.PROB_DEPRESSION
-        self.mentalHealthConsultDist = RVGs.Exponential(scale=D.MEAN_MH_CONSULT)
+        self.mentalHealthConsultDist = Exponential(scale=D.MEAN_MH_CONSULT)
