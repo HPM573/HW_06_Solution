@@ -43,8 +43,8 @@ class WaitingRoom:
 class Physician:
     def __init__(self, id, service_time_dist, urgent_care, sim_cal):
         """ create a physician
-        :param id: (integer) the room ID
-        :param service_time_dist: distribution of service time i
+        :param id: (integer) the physician ID
+        :param service_time_dist: distribution of service time
         :param urgent_care: urgent care
         :param sim_cal: simulation calendar
         """
@@ -56,7 +56,7 @@ class Physician:
         self.patientBeingServed = None  # the patient who is being served
 
     def remove_patient(self):
-        """ :returns the patient that was being served in this exam room"""
+        """ :returns the patient that was being served by this physician """
 
         # store the patient to be returned
         returned_patient = self.patientBeingServed
@@ -87,7 +87,7 @@ class PCP(Physician):
         :param rng: random number generator
         """
 
-        # the exam room is busy
+        # the physician is busy
         self.patientBeingServed = patient
         self.isBusy = True
 
